@@ -1,0 +1,43 @@
+import express from "express";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import routers, { frontendController } from "./controllers/index.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DIST_CANDIDATES = [
+  path.resolve(__dirname, "..", "dist"),
+  path.resolve(__dirname, ".."),
+];
+const DIST_DIR =
+  DIST_CANDIDATES.find((candidate) =>
+    fs.existsSync(path.join(candidate, "index.html")),
+  ) ?? DIST_CANDIDATES[0];
+
+export const app = express();
+app.use(express.json());
+
+for (const [route, router] of Object.entries(routers)) {
+  if (route === "/") {
+    app.use(router);
+  } else {
+    app.use(route, router);
+  }
+}
+
+// Serve static files first (with correct MIME types)
+app.use(
+  express.static(DIST_DIR, {
+    setHeaders: (res, path) => {
+      if (path.endsWith(".js")) {
+        res.setHeader("Content-Type", "application/javascript");
+      } else if (path.endsWith(".webmanifest")) {
+        res.setHeader("Content-Type", "application/manifest+json");
+      }
+    },
+  }),
+);
+
+// Frontend controller as fallback (only for routes without file extensions)
+app.use(frontendController);

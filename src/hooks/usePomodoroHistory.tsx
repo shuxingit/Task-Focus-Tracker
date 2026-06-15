@@ -1,0 +1,90 @@
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { PomodoroSession } from "@/types";
+import {
+  loadOfflineData,
+  updateOfflineData,
+  syncWithServer,
+} from "@/utils/offline";
+
+const API_URL = "/api/pomodoro-sessions";
+
+const usePomodoroHistoryImpl = () => {
+  const [sessions, setSessions] = useState<PomodoroSession[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const offline = loadOfflineData();
+        if (offline) setSessions(offline.pomodoroSessions || []);
+        const synced = await syncWithServer();
+        setSessions(synced.pomodoroSessions || []);
+      } catch (err) {
+        console.error("Error loading Pomodoro sessions", err);
+      } finally {
+        setLoaded(true);
+      }
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+    const save = async () => {
+      try {
+        updateOfflineData({ pomodoroSessions: sessions });
+        if (navigator.onLine) {
+          await fetch(API_URL, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(sessions),
+          });
+        }
+      } catch (err) {
+        console.error("Error saving Pomodoro sessions", err);
+      }
+      if (navigator.onLine) await syncWithServer();
+    };
+    save();
+  }, [sessions, loaded]);
+
+  const addSession = (start: number, end: number, type: "work" | "break") => {
+    setSessions((prev) => [...prev, { start, end, type }]);
+  };
+
+  const updateSession = (index: number, data: Partial<PomodoroSession>) => {
+    setSessions((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, ...data } : s)),
+    );
+  };
+
+  const deleteSession = (index: number) => {
+    setSessions((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  return { sessions, addSession, updateSession, deleteSession };
+};
+
+type Store = ReturnType<typeof usePomodoroHistoryImpl>;
+
+const PomodoroHistoryContext = createContext<Store | null>(null);
+
+export const PomodoroHistoryProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
+  const store = usePomodoroHistoryImpl();
+  return (
+    <PomodoroHistoryContext.Provider value={store}>
+      {children}
+    </PomodoroHistoryContext.Provider>
+  );
+};
+
+export const usePomodoroHistory = () => {
+  const ctx = useContext(PomodoroHistoryContext);
+  if (!ctx)
+    throw new Error(
+      "usePomodoroHistory must be used within PomodoroHistoryProvider",
+    );
+  return ctx;
+};

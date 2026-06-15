@@ -1,0 +1,85 @@
+# 🧠 AGENTS.md – Leitfaden für KI-Agenten
+
+Diese Datei dient als Anleitung für automatisierte Agenten (z. B. Codex), wie sie mit diesem Projekt interagieren sollen. Sie beschreibt Konventionen, Arbeitsabläufe und wichtige Anforderungen für eine reibungslose Integration.
+
+---
+
+## 1. Projektübersicht
+
+- **Frontend**: React + Vite, TypeScript, Tailwind CSS, Shadcn UI
+- **Backend**: Node.js (ES Modules) mit SQLite
+- **Struktur**:
+  - `/src` → Frontend (React/TS)
+  - `/server` → Backend (Node.js + SQLite)
+  - `/public` → Statische Assets
+  - `Dockerfile`, `docker-compose.yml` → Container Setup
+
+- **Hauptfunktionen**:
+  - Aufgabenverwaltung mit Kategorien, Unteraufgaben und Wiederholungen
+  - Tasks und Notizen können angeheftet werden (maximal drei auf der Startseite)
+  - Kalenderansicht und Task-Statistiken
+  - Notizen mit Markdown-Vorschau und Drag & Drop
+  - Lernkarten mit Spaced-Repetition, Deck-Verwaltung und Statistikseite
+  - Globale Suche über die Command Palette (`Strg+K`)
+  - Pomodoro-Timer mit History und eigener Statistik
+  - Daten-Export/-Import und mehrere Theme-Voreinstellungen
+
+---
+
+## 2. Setup & Entwicklung
+
+```bash
+npm run dev           # Frontend (Vite) auf Port 8080
+npm start             # Backend (Node.js) auf Port 3002
+```
+
+---
+
+## 3. Docker-Unterstützung
+
+```bash
+docker-compose up --build
+```
+
+- SQLite-Daten werden unter `./server/data` gespeichert und als Volume gemountet.
+
+---
+
+## 4. Codekonventionen
+
+- **Frontend**: TypeScript (`.tsx`, `.ts`)
+- **Backend**: JavaScript (ES Modules, `.js`)
+- **Formatierung**: 2 Leerzeichen, Semikolons am Ende. Vor jedem Commit `npm run format` ausführen und `npm run format:check` zur Prüfung verwenden
+
+---
+
+## 5. Navigation & Feature-Integration
+
+- Neue Features **sollen** in die **Navigationsleiste** integriert werden falls sie groß genug sind.
+- Die Navbar befindet sich unter `src/components/Navbar.tsx`.
+- Links werden über React Router konfiguriert.
+- Im Fall das neue Texte entstehen **müssen** sie in beide sprachen de und en in den translation.json Dateien angelegt und eingebunden werden.
+- Funktionen und Features sollen anpassbar sein, somit sollen anpassugnen in der Einstellungsseite einstellungen bekommen
+- Neue Grafische Elemente sollen mit den themes verknüpgt sein und somit vorhandene Farben nutzen oder im Fall von ganz Neuen Sachen neue Anpassungseinstellungen in den Einstellungen unter Theme anlegen.
+
+---
+
+## 6. Dokumentation & README
+
+- Bei **größeren Änderungen** (z. B. neue Features, API-Struktur, neue Befehle) **README.md aktualisieren**.
+- Neue Umgebungsvariablen, Setup-Anleitungen sollten dokumentiert werden.
+
+---
+
+## 7. Commit- & PR-Richtlinien
+
+- Commit-Nachrichten auf **Englisch**, klar und aussagekräftig
+- Beschreiben, **was** geändert wurde und **warum**
+- Pull Requests sollten nachvollziehbare Änderungen enthalten (inkl. Screenshots bei UI-Updates)
+
+---
+
+## 8. Pflege & Erweiterung
+
+- Diese Datei darf bei Bedarf erweitert werden
+- Unterverzeichnisse können eigene AGENTS.md verwenden, um spezifische Regeln zu setzen
