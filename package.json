@@ -1,8 +1,10 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "personal-schedule-system",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "基于React、Node.js和SQLite的个人日程管理与番茄专注系统",
+  "author": "不知道取什么名字组",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
