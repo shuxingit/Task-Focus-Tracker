@@ -44,7 +44,8 @@ function ensureSchema() {
     start INTEGER NOT NULL,
     end INTEGER NOT NULL,
     breakEnd INTEGER,
-    type TEXT
+    type TEXT,
+    reason TEXT
   );
   `);
 
@@ -608,5 +609,11 @@ try {
 } catch (_) {
   /* ignore - column already exists or other error */
 }
-
+// 自动为旧数据库添加 reason 列（如果不存在的话）
+try {
+  db.prepare("ALTER TABLE pomodoro_sessions ADD COLUMN reason TEXT").run();
+  console.log("【数据库】成功升级：已添加 reason 字段");
+} catch (_) {
+  /* 说明列已经存在，忽略错误 */
+}
 export default db;
