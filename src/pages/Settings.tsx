@@ -1981,7 +1981,6 @@ const SettingsPage: React.FC = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="de">{t("settings.german")}</SelectItem>
                       <SelectItem value="en">{t("settings.english")}</SelectItem>
                       <SelectItem value="zh">简体中文</SelectItem>
                     </SelectContent>
