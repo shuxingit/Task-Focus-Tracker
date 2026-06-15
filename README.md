@@ -1,258 +1,110 @@
-# Total-Task-Tracker
 
-English version available in [README.en.md](README.en.md).
+---
 
-Der Total-Task-Tracker ist eine leistungsstarke, lokal betriebene Aufgaben- und Lernverwaltung auf Basis von React, Node.js und SQLite. Die Anwendung kombiniert klassische To-do-Funktionen mit Kalenderintegration, Markdown-Notizen, einem Pomodoro-Timer und einem integrierten Lernkarten-System mit Spaced-Repetition-Algorithmus.
-Ideal für Selbstorganisation, Projektplanung oder die strukturierte Prüfungsvorbereitung.
+# Total-Task-Tracker (全能任务追踪器) - 中文说明文档
 
-Die Daten werden dabei vollständig lokal auf dem Server gespeichert, entweder per Docker oder im klassischen Node.js-Betrieb. So behältst du volle Kontrolle über deine Inhalte.
+`Total-Task-Tracker` 是一款基于 React、Node.js 和 SQLite 的高性能本地任务与学习管理工具。它结合了传统的待办事项功能、日历集成、Markdown 笔记、番茄钟以及内置间隔重复算法（Spaced-Repetition）的抽认卡系统。
 
-## Inhaltsverzeichnis
+它是自我组织、项目规划或结构化考试准备的理想工具。所有数据完全存储在本地（通过 Docker 或 Node.js 运行），确保你对内容的完全控制。
 
-- [Voraussetzungen](#voraussetzungen)
-- [Schnellstart mit dem fertigen Docker-Image](#schnellstart-mit-dem-fertigen-docker-image)
-- [Automatische Updates mit Watchtower](#automatische-updates-mit-watchtower)
-- [Docker-Compose: Image selbst bauen](#docker-compose-image-selbst-bauen)
-- [Installation für die lokale Entwicklung](#installation-für-die-lokale-entwicklung)
-- [Entwicklung starten](#entwicklung-starten)
-- [Manuelle Produktion ohne Docker](#manuelle-produktion-ohne-docker)
-- [Android APK erstellen](#android-apk-erstellen)
-- [Funktionen](#funktionen)
-- [Verwendung](#verwendung)
-- [Tastenkürzel](#tastenkürzel)
-- [Lernkarten-Algorithmus](#lernkarten-algorithmus)
-- [Entwicklerdokumentation](#entwicklerdokumentation)
+## 核心功能清单
 
-## Voraussetzungen
+### 1. 任务管理 (Tasks)
+*   **多级结构：** 支持分类管理、子任务和优先级设置。
+*   **重复任务：** 独立的页面处理周期性任务，支持自定义间隔（如每周、每月）和标题占位符（如 `{date}` 或 `{counter}`）。
+*   **进度追踪：** 分类卡片实时显示完成率。
 
-- Für die lokale Entwicklung: **Node.js** (empfohlen Version 18) und **npm**
-- Für den produktiven Betrieb: **Docker** und **docker-compose**
+### 2. 日历与计划 (Schedule)
+*   **多视图：** 提供日、周、月视图。
+*   **灵活排期：** 带有具体时间的任务显示为块，无时间任务显示为列表。
 
-## Schnellstart mit dem fertigen Docker-Image (empfohlen)
+### 3. 笔记系统 (Notes)
+*   **Markdown 支持：** 全面支持 Markdown 格式，带有实时预览和快捷格式化按钮。
+*   **整理逻辑：** 支持拖拽排序、置顶功能。置顶的前三条笔记会自动显示在首页。
 
-Wenn du nicht lokal bauen möchtest, kannst du das bereits bereitgestellte Docker-Image aus der GitHub Container Registry nutzen:
+### 4. 抽认卡与学习 (Flashcards)
+*   **间隔重复算法：** 基于成功率（Success Rate）自动计算下次复习时间。
+*   **多种模式：** 支持随机模式、输入模式（打字回答）、限时模式。
+*   **统计分析：** 提供详细的卡片到期统计和学习进度图表。
 
+### 5. 生产力工具
+*   **番茄钟 (Pomodoro)：** 即使刷新页面计时器也会继续运行。支持统计工作/休息比例。
+*   **时间追踪：** 记录不同生活领域的耗时，并生成分布图表。
+*   **库存管理：** 带有标签和分类的物品清单。
+
+### 6. 系统特性
+*   **同步与实时更新：** 支持通过 HTTP 进行中央同步。利用 **Server-Sent Events (SSE)** 实现多客户端实时数据更新。
+*   **多主题：** 内置多种主题（浅色、深色、海洋、黑客等），并支持完全自定义颜色。
+*   **导出/导入：** 支持数据与设置的完整 JSON 导出与恢复。
+*   **离线优先：** 即使服务器离线，客户端也会保存更改并在恢复连接后同步。
+
+---
+
+## 技术细节：抽认卡算法逻辑
+如果你打算修改学习功能，这是系统目前使用的算法公式：
+
+1.  **成功率计算：**
+    `successRate = (简单次数 + 0.5 * 中等次数) / (简单次数 + 中等次数 + 困难次数)`
+2.  **间隔计算：**
+    *   基础因子：`简单` = 1.5, `中等` = 1.2, `困难` = 0.8
+    *   最终因子 = `基础因子 * (1 + successRate)`
+    *   下一次间隔 = `当前间隔 * 最终因子`
+
+---
+
+## 开发与部署
+
+### 快速启动 (Docker)
 ```bash
 docker pull ghcr.io/timbornemann/total-task-tracker:latest
 docker run -d --name total-task-tracker -p 3002:3002 -v total-task-tracker-data:/app/server/data ghcr.io/timbornemann/total-task-tracker:latest
 ```
 
-Die Anwendung legt ihre SQLite-Daten standardmäßig im Volume `total-task-tracker-data` ab. Dieses Volume wird beim ersten Start automatisch angelegt und bleibt auch nach einem Container-Update erhalten. Möchtest du stattdessen ein bestimmtes Verzeichnis binden, kannst du ein Volume angeben:
+### 开发环境配置
 
-```bash
-docker run -d --name total-task-tracker -p 3002:3002 -v ./server/data:/app/server/data ghcr.io/timbornemann/total-task-tracker:latest
-```
+#### 第一步：基础环境准备
 
-Soll in den Einstellungen eine bestimmte IP angezeigt werden (etwa bei der Docker-Nutzung), kannst du die Umgebungsvariable `SERVER_PUBLIC_IP` setzen. Dieser Wert wird unter "Server Info" zusätzlich ausgegeben.
+  **下载并安装 Node.js：**
+    *   前往 [Node.js 官网](https://nodejs.org/)，下载 **LTS（长期支持版）**。
+    *   安装时一路点击“下一步”，并确保勾选了 **"Add to PATH"**（添加到系统变量）。
 
-## Automatische Updates mit Watchtower
+#### 第二步：初始化项目
 
-Um den Container stets aktuell zu halten, kannst du [Watchtower](https://containrrr.dev/watchtower/) einsetzen. Damit wird regelmäßig geprüft, ob neue Images verfügbar sind.
+在运行 `start-dev.bat` 文件之前，必须先下载项目依赖的库文件：
 
-### Alle Container überwachen
+1.  在项目根目录下（即看到 `package.json` 的地方），按下 `Shift + 鼠标右键`，选择“在此处打开 PowerShell”或“在终端中打开”。
+2.  输入以下命令并回车：
+    ```bash
+    npm install
+    ```
+    或者如果你安装了 Bun：
+    ```bash
+    bun install
+    ```
+    *这一步就是你记得的“下载什么什么”，它会根据配置文件下载几百个工具包到 `node_modules` 文件夹。*
 
-```bash
-docker run -d --name watchtower --restart unless-stopped -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower --interval 3600
-```
+#### 第三步：日常运行（使用图中的文件）
 
-Der Parameter `--interval` gibt das Prüfintervall in Sekunden an. Im Beispiel sucht Watchtower also jede Stunde nach Updates und startet betroffene Container neu.
+一旦环境装好了，依赖也下载完了，以后你只需要：
 
-### Nur diesen Container aktualisieren
+1.  **双击运行 `start-dev.bat`**。
+2.  这个脚本通常会自动帮你做两件事：
+    *   启动**后端服务器**（通常监听 `3002` 端口）。
+    *   启动**前端开发环境**（通常监听 `8081` 端口）。
+3.  **如何查看：**
+    *   保持那个黑色窗口不要关。
+    *   打开浏览器，访问：`http://localhost:8081`（或者是窗口里提示的地址）。
 
-```bash
-docker run -d --name watchtower --restart unless-stopped -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower total-task-tracker-app --interval 3600
-```
+---
 
-Soll Watchtower lediglich einmalig prüfen und danach beendet werden, füge `--run-once` hinzu:
 
-```bash
-docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower total-task-tracker-app --run-once
-```
 
-## Docker-Compose: Image selbst bauen
 
-Die Anwendung kann auch komplett über `docker-compose` ausgeführt werden. Dabei wird automatisch ein Produktionsbuild erstellt.
+### 快捷键 (可自定义)
+*   `Ctrl + K`：打开全局搜索 (Command Palette)
+*   `Ctrl + Alt + T`：快速新建任务
+*   `Ctrl + Alt + N`：快速新建笔记
+*   `Ctrl + Alt + F`：快速新建抽认卡
 
-1. Repository klonen und in das Projektverzeichnis wechseln
-2. Container bauen und starten (setzt optional die Versionsnummer)
+---
 
-```bash
-VERSION=$(git describe --tags --abbrev=0) docker-compose up --build
-```
-
-Der Dienst lauscht anschließend auf Port **3002**. Im Browser unter `http://localhost:3002` erreichst du das Dashboard. Die Daten werden in einem benannten Docker-Volume (`total-task-tracker-data`) gespeichert. Mit `docker-compose down` kann der Container gestoppt werden, ohne dass die Daten verloren gehen.
-
-## Installation für die lokale Entwicklung
-
-```bash
-# Repository klonen
-git clone <REPO_URL>
-cd Total-Task-Tracker
-
-# Abhängigkeiten installieren
-npm install
-
-Das Projekt nutzt für die Anzeige von Notizen **react-markdown**.
-```
-
-## Entwicklung starten
-
-Im Entwicklungsmodus läuft die React-Anwendung mit Vite auf Port **8081**. Für die Datenspeicherung kann gleichzeitig der Node-Server gestartet werden.
-
-```bash
-# Frontend mit automatischem Reload
-npm run dev
-
-# In zweitem Terminal: Backend starten
-npm run start:ts
-```
-
-Rufe anschließend im Browser `http://localhost:8081` auf.
-
-## Tests ausführen
-
-Die Anwendung verwendet [Vitest](https://vitest.dev/) und die React Testing Library.
-Nach der Installation der Abhängigkeiten kannst du die Tests mit folgendem Befehl starten:
-
-```bash
-npm test
-```
-
-## Manuelle Produktion ohne Docker
-
-Möchtest du ohne Docker deployen, kannst du die Anwendung lokal bauen und den Node-Server direkt nutzen.
-
-```bash
-npm run build
-npm run build:server
-npm start    # startet die gebaute App auf Port 3002
-```
-
-## Android APK erstellen
-
-Mit [Capacitor](https://capacitorjs.com/) kannst du den Tracker auch als Android-App bauen.
-
-1. Projekt einmalig initialisieren:
-   ```bash
-   npm install
-   npx cap init total-task-tracker com.example.total_task_tracker --web-dir=dist
-   npx cap add android
-   ```
-2. Produktionsbuild erstellen und Dateien kopieren:
-   ```bash
-   npm run build:android
-   ```
-3. Android-Projekt in Android Studio öffnen und ein signiertes APK erzeugen:
-   ```bash
-   npm run open:android
-   ```
-
-## Funktionen
-
-- Aufgaben anlegen, bearbeiten und in Kategorien sortieren
-- Unteraufgaben und Prioritäten
-- Separate Seite für wiederkehrende Aufgaben mit eigenen Intervallen und dynamischen Titeln
-- Zeitplan-Seite mit Tages-, Wochen- und Monatsansicht
-  - Aufgaben lassen sich mit Start- und Endzeit planen
-  - Tasks ohne Uhrzeit werden pro Tag als Liste angezeigt
-- Eigene Notizen mit Farbe und Drag & Drop sortierbar
-  - Drag & Drop basiert jetzt auf dnd-kit und funktioniert in Grid-Layouts für Notizen, Tasks, Kategorien und die Startseiten-Buttons
-  - Notizen lassen sich anpinnen; die ersten drei angepinnten erscheinen auf der Startseite
-  - Tasks lassen sich ebenfalls anpinnen; die ersten drei werden auf der Startseite gezeigt
-  - Text kann im Markdown-Format geschrieben werden
-  - Eingebauter Editor bietet Icons und Tooltips für häufige Formatierungen (z. B. Listen, Links, Codeblöcke)
-- Lernkarten mit Spaced-Repetition-Training und Verwaltung eigener Karten
-  - Decks lassen sich beim Lernen ein- oder ausblenden
-  - Optionaler Zufallsmodus ohne Bewertung
-  - Trainingsmodus direkt auf der Kartenseite mit frei einstellbarer Rundengröße
-  - Eingabemodus zum Tippen der Antworten; nach dem Prüfen bewertest du selbst, ob die Karte leicht, mittel oder schwer war
-  - Timed-Modus mit anpassbarem Countdown pro Karte; der Timer wird einmalig gestartet und kann pausiert werden. Bei Ablauf wird automatisch "schwer" gewertet
-- Statistikseite für Lernkarten
-- Deck-Statistiken mit Übersicht fälliger Karten
-- Inventarverwaltung mit Kategorien und Tags
-- Speicherung der Daten auf dem lokalen Server
-- Kann als Progressive Web App installiert werden (Desktop & Smartphone)
-- Pomodoro-Timer läuft beim Neuladen der Seite weiter
-- Separate Uhr-Seite zeigt stets die aktuelle Zeit
-- Zeiterfassung für alle Lebensbereiche mit Kategorien, Bearbeitung, Kartenansicht und Übersichtsstatistik mit anschaulichen Diagrammen zur Zeitverteilung
-- Kann als schwebendes Fenster (Picture-in-Picture) angezeigt werden
-- Statistikseite auf der Pomodoro-Seite mit Tages-, Wochen-, Monats- und Jahresübersicht
-  - Auswertung nach Tageszeiten (Morgen, Mittag, Abend, Nacht)
-  - Zusätzliche Anzeige für den aktuellen Tag
-- Minuten für Arbeit und Pause werden separat gezählt und als gestapelter Balken
-  dargestellt. Beim Pausieren oder Zurücksetzen des Timers werden die Werte
-  sofort aktualisiert.
-- Lern- und Pausendauer frei konfigurierbar (auch direkt im Timer anpassbar)
-- Daten können im Einstellungsbereich exportiert und importiert werden
-  (inklusive Einstellungen)
-- Import zeigt eine Vorschau der einzufügenden Elemente und bestätigt den Erfolg
-- Zusätzlich kann die reine Datenstruktur als JSON exportiert werden
-- Zentrale Synchronisation über HTTP. Ein Container kann als Sync-Server
-  betrieben werden, alle anderen senden ihre Daten regelmäßig dorthin.
-  Der Server listet seine IP-Adressen auf und führt ein Log über eingehende
-  Anfragen. Fällt der Server aus, speichern Clients lokal weiter und gleichen
-  die Daten ab, sobald der Server wieder erreichbar ist.
-- Live-Updates per Server-Sent Events halten geöffnete Clients automatisch auf dem neuesten Stand.
-- Gelöschte Einträge werden über ein Deletion-Log abgeglichen und tauchen nicht wieder auf.
-- Standard-Priorität für neue Tasks einstellbar
-- Mehrsprachige Oberfläche (Deutsch, Englisch) auswählbar
-- Mehrere Theme-Voreinstellungen (light, dark, ocean, dark-red, hacker,
-  motivation) stehen zur Auswahl. Eigene Themes können benannt,
-  gespeichert und verwaltet werden, wobei alle Farben individuell
-  anpassbar sind.
-- Jede Theme-Voreinstellung bringt nun eine passende Farbpalette für Kategorien,
-  Tasks und Notizen mit
-- Neuer "Info"-Reiter in den Einstellungen zeigt Versionsnummer, Release Notes und README
-- Im Reiter "Sprache" lässt sich Deutsch oder Englisch auswählen
-- Untermenü "Server Info" in den Einstellungen listet IP-Adressen, Port und fertige URLs auf
-
-## Verwendung
-
-1. Nach dem Start siehst du die vorhandenen **Kategorien**. Mit dem Button `Kategorie` kannst du neue Kategorien erstellen.
-2. Wähle eine Kategorie aus, um ihre **Tasks** zu sehen. Über `Task` legst du neue Aufgaben an. Dort kannst du Titel, Beschreibung, Priorität, Farbe und ein Fälligkeitsdatum festlegen.
-3. Wiederkehrende Aufgaben erstellst du über die Seite **Wiederkehrend**. Dort legst du Vorlagen mit festen oder benutzerdefinierten Intervallen an und kannst Platzhalter wie `{date}` oder `{counter}` im Titel nutzen.
-4. Tasks lassen sich per Drag & Drop umsortieren oder in Unteraufgaben aufteilen.
-5. Über das Suchfeld und die Filter sortierst und findest du Aufgaben nach Priorität oder Farbe.
-6. Mit dem Sternsymbol kannst du eine Task anpinnen. Die ersten drei gepinnten erscheinen auf der Startseite.
-7. Mit `Strg+K` (oder über das Suchsymbol) öffnest du die **globale Suche**. Sie durchsucht Tasks, Notizen und Lernkarten und führt dich bei Auswahl direkt zum entsprechenden Eintrag.
-8. In der **Zeitplan**-Ansicht wählst du einen Tag, eine Woche oder einen Monat aus. Aufgaben mit Uhrzeit erscheinen als Blöcke, solche ohne Zeit als Liste unterhalb des Plans.
-   Die **Statistiken** geben einen Überblick über erledigte Tasks.
-9. Unter **Notizen** kannst du unabhängige Notizen verwalten und per Drag & Drop sortieren. Gepinnte Notizen erscheinen auf der Startseite. Deine Inhalte kannst du dabei in Markdown verfassen. Beim Anklicken einer Notiz siehst du zunächst eine Vorschau und kannst sie direkt bearbeiten. Auf dem Desktop erscheint nun während des Bearbeitens eine Live-Vorschau rechts neben dem Editor. Der Editor stellt zahlreiche Schaltflächen für gängige Formatierungen bereit.
-10. Unter **Decks** legst du Kartendecks an und kannst sie bearbeiten. In der Detailansicht eines Decks fügst du einzelne Karten hinzu.
-11. Der Bereich **Karten** zeigt dir fällige Karten zum Lernen an. Dort kannst du
-    gezielt Decks ein- oder ausblenden, einen Zufallsmodus aktivieren und im
-    Eingabemodus Antworten eintippen. Nach dem Vergleich der Lösung entscheidest
-    du selbst, wie schwer dir die Karte fiel.
-    Im Timed-Modus bestimmt ein einstellbarer Countdown die Zeit pro Karte. Der Timer startet einmalig zu Beginn der Session und kann jederzeit pausiert werden. Bei 0 wird automatisch "schwer" gewertet.
-
-Viel Spaß beim Ausprobieren!
-
-### Tastenkürzel
-
-In den Einstellungen kannst du die wichtigsten Shortcuts per Tastendruck
-anpassen. Standardmäßig gelten folgende Kombinationen:
-
-- `ctrl+k` – Command Palette öffnen
-- `ctrl+alt+t` – Schnell eine neue Task anlegen
-- `ctrl+alt+n` – Schnell eine neue Notiz anlegen
-- `ctrl+alt+f` – Neue Lernkarte erstellen
-
-## Lernkarten-Algorithmus
-
-Beim Bewerten einer Karte merkt sich das System, wie oft sie als **leicht**, **mittel** oder **schwer** eingestuft wurde. Aus diesen Zählen berechnet sich eine Erfolgsquote:
-
-```
-successRate = (easyCount + 0.5 * mediumCount) / (easyCount + mediumCount + hardCount)
-```
-
-Die nächste Wiederholungszeit wird dann wie folgt bestimmt:
-
-1. Basisfaktor je nach aktueller Bewertung (`leicht` = 1.5, `mittel` = 1.2, `schwer` = 0.8)
-2. Der Faktor wird mit `1 + successRate` multipliziert
-3. Das Intervall erhöht sich um `interval * Faktor`
-
-Dadurch fließt sowohl die bisherige Leistung als auch die aktuelle Bewertung in das nächste Fälligkeitsdatum ein.
-
-## Entwicklerdokumentation
-
-Eine technische Übersicht und weiterführende Informationen für Entwickler findest du im Ordner [docs](docs/README.md).
