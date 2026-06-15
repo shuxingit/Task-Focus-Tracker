@@ -1,3 +1,4 @@
+import { useToast } from "@/hooks/use-toast";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Task } from "@/types";
@@ -86,7 +87,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   const { colorPalette, theme, collapseSubtasksByDefault } = useSettings();
 
   const [collapsed, setCollapsed] = useState(collapseSubtasksByDefault);
-
+  const { toast } = useToast(); // 获取弹窗工具
   React.useEffect(() => {
     setCollapsed(collapseSubtasksByDefault);
   }, [collapseSubtasksByDefault]);
@@ -119,9 +120,33 @@ const TaskCard: React.FC<TaskCardProps> = ({
     updateTask(task.id, { pinned: !task.pinned });
   };
 
-  const handleToggleComplete = () => {
-    if (task.subtasks.length === 0) {
-      onToggleComplete(task.id, !task.completed);
+  const handleToggleComplete = async () => {
+    if (!task.subtasks || task.subtasks.length === 0) {
+      const newStatus = !task.completed;
+
+      // 1. 【核心逻辑】直接调用更新，不写 reload！
+      // 现在的程序会自动通过 React 的状态管理（Zustand）来重新渲染界面，
+      // 任务会“丝滑”地滑出列表，而不是整个网页闪一下。
+      await onToggleComplete(task.id, newStatus);
+
+      // 2. 依然弹出“后悔药”，但撤销里也把 reload 删掉
+      toast({
+        title: newStatus ? "任务已完成" : "任务已还原",
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={async () => {
+              await onToggleComplete(task.id, !newStatus);
+              // 这里不需要 reload，任务会自动跳回来
+            }}
+          >
+            撤销
+          </Button>
+        ),
+      });
+      
+      // 注意：这里我们删掉了之前那个 setTimeout 和 window.location.reload()
     }
   };
 

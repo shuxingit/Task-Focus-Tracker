@@ -54,11 +54,12 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
     }
   }, [category, isOpen, colorPalette]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => { // 1. 加上 async
     e.preventDefault();
     if (formData.name.trim()) {
-      onSave(formData);
+      await onSave(formData); 
       onClose();
+      window.location.reload(); 
     }
   };
 
