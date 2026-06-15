@@ -3,37 +3,36 @@ import db from "../lib/db.js";
 
 export function loadPomodoroSessions(): PomodoroSession[] {
   try {
+    // 1. 修改 SQL 语句，增加 reason 字段
     const rows = db
-      .prepare("SELECT start, end, breakEnd, type FROM pomodoro_sessions")
+      .prepare("SELECT start, end, breakEnd, type, reason FROM pomodoro_sessions")
       .all() as {
       start: number;
       end: number;
       breakEnd?: number;
       type?: string;
+      reason?: string; // 接收数据库里的 reason
     }[];
 
     const normalized: PomodoroSession[] = [];
     for (const r of rows) {
-      // If it has a breakEnd (legacy), split it
       if (r.breakEnd) {
-        // Work session
         normalized.push({
           start: r.start,
           end: r.end,
           type: "work",
         });
-        // Break session
         normalized.push({
           start: r.end,
           end: r.breakEnd,
           type: "break",
         });
       } else {
-        // Already normalized or just a work session without break or just manual
         normalized.push({
           start: r.start,
           end: r.end,
           type: (r.type as "work" | "break") || "work",
+          reason: r.reason, // 2. 将数据库中的理由映射到对象中
         });
       }
     }
@@ -46,13 +45,14 @@ export function loadPomodoroSessions(): PomodoroSession[] {
 export function savePomodoroSessions(sessions: PomodoroSession[]): void {
   const tx = db.transaction(() => {
     db.exec("DELETE FROM pomodoro_sessions");
+    // 3. 修改插入语句，增加 reason 占位符
     const stmt = db.prepare(
-      "INSERT INTO pomodoro_sessions (start, end, type) VALUES (?, ?, ?)",
+      "INSERT INTO pomodoro_sessions (start, end, type, reason) VALUES (?, ?, ?, ?)",
     );
     for (const s of sessions || []) {
-      // Ensure we only save 'work' or 'break' types
       const type = s.type === "break" ? "break" : "work";
-      stmt.run(s.start, s.end, type);
+      // 4. 将理由存入数据库 (如果没有理由则存为 null)
+      stmt.run(s.start, s.end, type, s.reason || null);
     }
   });
   tx();

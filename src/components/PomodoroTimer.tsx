@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ReactDOM from "react-dom/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input"; // 确保导入 Input
 import { usePomodoroStore } from "@/stores/pomodoro";
 import { useSettings, SettingsProvider } from "@/hooks/useSettings";
 import { hslToHex, hexToHsl, complementaryColor } from "@/utils/color";
@@ -11,6 +12,14 @@ import {
   PomodoroHistoryProvider,
 } from "@/hooks/usePomodoroHistory.tsx";
 import { useToast } from "@/components/ui/use-toast";
+// 导入弹窗组件
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const formatTime = (sec: number) => {
   const m = Math.floor(sec / 60)
@@ -24,9 +33,7 @@ const formatTime = (sec: number) => {
 
 interface PomodoroTimerProps {
   compact?: boolean;
-  /** Radius of the timer circle */
   size?: number;
-  /** Hide floating button when displayed inside floating window */
   floating?: boolean;
 }
 
@@ -38,7 +45,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
   const {
     isRunning,
     isPaused,
-    remainingTime: storeRemainingTime, // Rename to distinguish from local smooth state
+    remainingTime: storeRemainingTime,
     mode,
     start,
     pause,
@@ -52,12 +59,19 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     setDurations,
     setStartTime,
     startTime: storeStartTime,
-    endTime, // Use endTime for smooth calcs
+    endTime,
   } = usePomodoroStore();
+  
   const { pomodoro, updatePomodoro, theme } = useSettings();
   const { addSession } = usePomodoroHistory();
   const { t } = useTranslation();
   const { toast } = useToast();
+  
+  // --- 新增状态：控制理由弹窗 ---
+  const [isReasonModalOpen, setIsReasonModalOpen] = useState(false);
+  const [quitReason, setQuitReason] = useState("");
+  // ---------------------------
+
   const pipWindowRef = useRef<Window | null>(null);
   const [now, setNow] = useState(Date.now());
   const [position, setPosition] = useState<{ x: number; y: number }>(() => {
@@ -65,9 +79,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     try {
       const stored = localStorage.getItem("pomodoroFloatPos");
       if (stored) return JSON.parse(stored);
-    } catch {
-      // ignore storage errors
-    }
+    } catch {}
     const sizePx = size * 2 + 24;
     return {
       x: window.innerWidth - sizePx - 16,
@@ -76,29 +88,20 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
   });
   const offsetRef = useRef({ x: 0, y: 0 });
 
-  // Local state for smooth updates
   const [smoothRemaining, setSmoothRemaining] = useState(storeRemainingTime);
   const [smoothProgress, setSmoothProgress] = useState(0);
 
   useEffect(() => {
     try {
       localStorage.setItem("pomodoroFloatPos", JSON.stringify(position));
-    } catch {
-      // ignore storage errors
-    }
+    } catch {}
   }, [position]);
 
   const handlePointerMove = (e: PointerEvent) => {
     const sizePx = size * 2 + 24;
     setPosition({
-      x: Math.min(
-        Math.max(0, e.clientX - offsetRef.current.x),
-        window.innerWidth - sizePx,
-      ),
-      y: Math.min(
-        Math.max(0, e.clientY - offsetRef.current.y),
-        window.innerHeight - sizePx,
-      ),
+      x: Math.min(Math.max(0, e.clientX - offsetRef.current.x), window.innerWidth - sizePx),
+      y: Math.min(Math.max(0, e.clientY - offsetRef.current.y), window.innerHeight - sizePx),
     });
   };
 
@@ -108,61 +111,36 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
   };
 
   const startDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    offsetRef.current = {
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    };
+    offsetRef.current = { x: e.clientX - position.x, y: e.clientY - position.y };
     window.addEventListener("pointermove", handlePointerMove);
     window.addEventListener("pointerup", stopDrag);
   };
 
-  // High frequency update loop for smooth visuals
   useEffect(() => {
     if (!isRunning || isPaused || !endTime) {
-      // Fallback to store values when not running smoothly
       setSmoothRemaining(storeRemainingTime);
       const duration = mode === "work" ? workDuration : breakDuration;
       setSmoothProgress(storeRemainingTime / duration);
       return;
     }
-
     let animationFrameId: number;
-
     const animate = () => {
       const now = Date.now();
       const msRemaining = Math.max(0, endTime - now);
       const secondsRemaining = Math.ceil(msRemaining / 1000);
-
       const duration = mode === "work" ? workDuration : breakDuration;
-      // Calculate precise progress (0.0 to 1.0)
-      // We use ms for the ring to be buttery smooth
-      // Total duration in ms
       const durationMs = duration * 1000;
-      // Progress acts inverted in the original code (remaining / total)
       const exactProgress = Math.min(1, Math.max(0, msRemaining / durationMs));
-
       setSmoothRemaining(secondsRemaining);
       setSmoothProgress(exactProgress);
-
       if (msRemaining > 0) {
         animationFrameId = requestAnimationFrame(animate);
       }
     };
-
     animate();
-
     return () => cancelAnimationFrame(animationFrameId);
-  }, [
-    isRunning,
-    isPaused,
-    endTime,
-    mode,
-    workDuration,
-    breakDuration,
-    storeRemainingTime,
-  ]);
+  }, [isRunning, isPaused, endTime, mode, workDuration, breakDuration, storeRemainingTime]);
 
-  // Keep 'now' updated for pause duration display (low freq is fine for this)
   useEffect(() => {
     if (!isPaused) return;
     const i = setInterval(() => setNow(Date.now()), 1000);
@@ -171,139 +149,34 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
 
   const pauseDuration = pauseStart ? Math.floor((now - pauseStart) / 1000) : 0;
 
-  const openFloatingWindow = async () => {
-    if (pipWindowRef.current && !pipWindowRef.current.closed) {
-      pipWindowRef.current.focus();
-      return;
-    }
-    try {
-      let pip: Window | null = null;
-      const w = window as unknown as {
-        documentPictureInPicture?: {
-          requestWindow: (opts: {
-            width: number;
-            height: number;
-          }) => Promise<Window | null>;
-        };
-      };
-      if (w.documentPictureInPicture) {
-        try {
-          pip = await w.documentPictureInPicture.requestWindow({
-            width: 200,
-            height: 200,
-          });
-        } catch (err) {
-          console.error("Failed to open PiP window", err);
-          toast({
-            title: t("pomodoroTimer.pipErrorTitle", "Floating Window Error"),
-            description: t(
-              "pomodoroTimer.pipErrorDesc",
-              "Could not open always-on-top window. Falling back to standard window.",
-            ),
-            variant: "destructive",
-          });
-          pip = window.open("", "", "width=200,height=200");
-        }
-      } else {
-        toast({
-          title: t("pomodoroTimer.pipUnsupportedTitle", "Not Supported"),
-          description: t(
-            "pomodoroTimer.pipUnsupportedDesc",
-            "Your browser does not support always-on-top floating windows. Using standard window instead.",
-          ),
-          variant: "default",
-        });
-        pip = window.open("", "", "width=200,height=200");
-      }
-      if (!pip) {
-        toast({
-          title: t("pomodoroTimer.popupBlockedTitle", "Popup Blocked"),
-          description: t(
-            "pomodoroTimer.popupBlockedDesc",
-            "Please allow popups for this site to use the floating timer.",
-          ),
-          variant: "destructive",
-        });
-        return;
-      }
-      pipWindowRef.current = pip;
-      if (!pip.document.body) {
-        pip.document.write(
-          "<!DOCTYPE html><html><head></head><body></body></html>",
-        );
-        pip.document.close();
-      }
-      pip.document.title = t("navbar.pomodoro");
-      pip.document.documentElement.className =
-        document.documentElement.className;
-      // Copy styles using styleSheets API to handle both inline and external styles robustly
-      // and explicitly copy all computed styles if needed, but usually stylesheet copying is enough.
-      Array.from(document.styleSheets).forEach((styleSheet) => {
-        try {
-          if (styleSheet.href) {
-            // It's a link tag, create a new link tag explicitly to ensure href is absolute/correct
-            const link = pip!.document.createElement("link");
-            link.rel = "stylesheet";
-            link.href = styleSheet.href;
-            pip!.document.head.appendChild(link);
-          } else {
-            // It's an inline style or loaded via JS (Vite dev mode often does this)
-            // We try to copy the rules content.
-            const cssRules = Array.from(styleSheet.cssRules)
-              .map((rule) => rule.cssText)
-              .join("");
-            const style = pip!.document.createElement("style");
-            style.textContent = cssRules;
-            pip!.document.head.appendChild(style);
-          }
-        } catch (e) {
-          // If we can't access cssRules (CORS), fallback to cloning the link if possible
-          console.warn("Could not copy stylesheet rules", e);
-          if (styleSheet.href) {
-            const link = pip!.document.createElement("link");
-            link.rel = "stylesheet";
-            link.type = "text/css";
-            link.href = styleSheet.href;
-            pip!.document.head.appendChild(link);
-          }
-        }
-      });
-      pip.document.body.style.margin = "0";
-      const container = pip.document.createElement("div");
-      pip.document.body.appendChild(container);
-      const root = ReactDOM.createRoot(container);
-      const renderTimer = () => {
-        const size = Math.max(
-          40,
-          Math.floor((Math.min(pip!.innerWidth, pip!.innerHeight) - 40) / 2),
-        );
-        root.render(
-          <SettingsProvider>
-            <PomodoroHistoryProvider>
-              <PomodoroTimer size={size} floating />
-            </PomodoroHistoryProvider>
-          </SettingsProvider>,
-        );
-      };
-      renderTimer();
-      pip.addEventListener("resize", renderTimer);
-      const cleanup = () => {
-        pip.removeEventListener("resize", renderTimer);
-        pipWindowRef.current = null;
-      };
-      pip.addEventListener("pagehide", cleanup);
-      pip.addEventListener("beforeunload", cleanup);
-    } catch (err) {
-      console.error("Failed to open floating window", err);
-      toast({
-        title: "Error",
-        description:
-          "An unexpected error occurred while opening the floating window.",
-        variant: "destructive",
-      });
+  // --- 修改重置逻辑：拦截并弹出理由框 ---
+  const handleResetClick = () => {
+    // 只有在工作中且计时未结束时，才要求输入理由
+    if (mode === "work" && smoothRemaining > 0) {
+      setIsReasonModalOpen(true);
+    } else {
+      performReset();
     }
   };
-  // We rely on store.startTime for both work and break now.
+
+  const performReset = (reason?: string) => {
+    if (storeStartTime) {
+      // 如果有理由，可以考虑存入 session（此处演示先通过 toast 显示）
+      if (reason) {
+        console.log("放弃理由:", reason);
+        toast({
+          title: t("common.undo"),
+          description: `${t("pomodoroTimer.quitReasonLabel")}: ${reason}`,
+        });
+      }
+      addSession(storeStartTime, Date.now(), mode, reason);
+    }
+    setStartTime(undefined);
+    reset();
+    setIsReasonModalOpen(false);
+    setQuitReason("");
+  };
+  // ------------------------------------
 
   const handlePause = () => {
     if (storeStartTime) {
@@ -313,43 +186,21 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     pause();
   };
 
-  const handleReset = () => {
-    if (storeStartTime) {
-      addSession(storeStartTime, Date.now(), mode);
-    }
-    setStartTime(undefined);
-    reset();
-  };
-
   const handleResume = () => {
-    if (pauseStart) {
-      addSession(pauseStart, Date.now(), "break");
-    }
+    if (pauseStart) addSession(pauseStart, Date.now(), "break");
     resume();
-    // Resume function in store now handles startTime/endTime logic
   };
 
   const handleStartBreak = () => {
-    // If we are currently working, save the work done so far
-    if (mode === "work" && storeStartTime) {
-      addSession(storeStartTime, Date.now(), "work");
-    } else if (pauseStart) {
-      // If we were paused, the gap was a break
-      addSession(pauseStart, Date.now(), "break");
-    }
+    if (mode === "work" && storeStartTime) addSession(storeStartTime, Date.now(), "work");
+    else if (pauseStart) addSession(pauseStart, Date.now(), "break");
     startBreak();
-    // Store sets startTime in startBreak()
   };
 
   const handleSkipBreak = () => {
-    // If we are currently in a break, save the break time taken so far
-    if (mode === "break" && storeStartTime) {
-      addSession(storeStartTime, Date.now(), "break");
-    } else if (pauseStart) {
-      addSession(pauseStart, Date.now(), "break");
-    }
+    if (mode === "break" && storeStartTime) addSession(storeStartTime, Date.now(), "break");
+    else if (pauseStart) addSession(pauseStart, Date.now(), "break");
     skipBreak();
-    // Store sets startTime in skipBreak()
   };
 
   useEffect(() => {
@@ -359,16 +210,11 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
   const prevMode = useRef(mode);
   useEffect(() => {
     if (prevMode.current !== mode) {
-      if (mode === "break") {
-        playSound(pomodoro.workSound);
-      } else {
-        playSound(pomodoro.breakSound);
-      }
+      if (mode === "break") playSound(pomodoro.workSound);
+      else playSound(pomodoro.breakSound);
       prevMode.current = mode;
     }
     const breakColor = theme["pomodoro-break-ring"];
-
-    // Helper to update a document's styles
     const updateStyles = (doc: Document) => {
       if (mode === "break") {
         const comp = hexToHsl(complementaryColor(hslToHex(breakColor)));
@@ -376,174 +222,85 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
         doc.documentElement.style.setProperty("--pomodoro-break-ring", comp);
       } else {
         doc.documentElement.style.setProperty("--background", theme.background);
-        doc.documentElement.style.setProperty(
-          "--pomodoro-break-ring",
-          breakColor,
-        );
+        doc.documentElement.style.setProperty("--pomodoro-break-ring", breakColor);
       }
     };
-
     updateStyles(document);
-    if (pipWindowRef.current) {
-      updateStyles(pipWindowRef.current.document);
-    }
-
     return () => {
-      // limiting cleanup to main doc for safety, PIP cleanup handled on close
-      document.documentElement.style.setProperty(
-        "--background",
-        theme.background,
-      );
-      document.documentElement.style.setProperty(
-        "--pomodoro-break-ring",
-        breakColor,
-      );
-      if (pipWindowRef.current && pipWindowRef.current.document) {
-        pipWindowRef.current.document.documentElement.style.setProperty(
-          "--background",
-          theme.background,
-        );
-        pipWindowRef.current.document.documentElement.style.setProperty(
-          "--pomodoro-break-ring",
-          breakColor,
-        );
-      }
+      document.documentElement.style.setProperty("--background", theme.background);
+      document.documentElement.style.setProperty("--pomodoro-break-ring", breakColor);
     };
-  }, [mode, pomodoro.workSound, pomodoro.breakSound, theme, pipWindowRef]);
-
-  if (compact && !isRunning) return null;
+  }, [mode, pomodoro.workSound, pomodoro.breakSound, theme]);
 
   const radius = size;
   const stroke = 8;
   const normalizedRadius = radius - stroke / 2;
   const circumference = normalizedRadius * 2 * Math.PI;
-
-  // Use smoothProgress for ring, smoothRemaining for text
-  // smoothProgress is 0..1 (remaining/total), but we want inverse for strokeDashoffset calc if we want it to shrink
-  // The original code was: progress = remainingTime / duration
-  // strokeDashoffset = circumference - progress * circumference
-
-  // So if progress is 1 (full), offset is 0 (full ring).
-  // If progress is 0 (empty), offset is circumference (empty ring).
   const strokeDashoffset = circumference - smoothProgress * circumference;
 
   return (
     <div
       onPointerDown={compact ? startDrag : undefined}
-      className={
-        compact
-          ? "fixed bg-background shadow-lg rounded p-3 z-50 cursor-move"
-          : "flex flex-col items-center space-y-4"
-      }
+      className={compact ? "fixed bg-background shadow-lg rounded p-3 z-50 cursor-move" : "flex flex-col items-center space-y-4"}
       style={compact ? { left: position.x, top: position.y } : undefined}
     >
-      <div
-        className="relative"
-        style={{ width: radius * 2, height: radius * 2 }}
-      >
-        <svg
-          width={radius * 2}
-          height={radius * 2}
-          className="transform -rotate-90"
-        >
+      {/* --- 新增：放弃理由对话框 --- */}
+      <Dialog open={isReasonModalOpen} onOpenChange={setIsReasonModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("pomodoroTimer.quitReasonTitle")}</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground mb-2">
+              {t("pomodoroTimer.quitReasonDesc")}
+            </p>
+            <Input 
+              value={quitReason} 
+              onChange={(e) => setQuitReason(e.target.value)}
+              placeholder={t("pomodoroTimer.quitReasonPlaceholder")}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsReasonModalOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button variant="destructive" disabled={!quitReason.trim()} onClick={() => performReset(quitReason)}>
+              {t("pomodoroTimer.reset")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="relative" style={{ width: radius * 2, height: radius * 2 }}>
+        <svg width={radius * 2} height={radius * 2} className="transform -rotate-90">
+          <circle stroke="hsl(var(--muted))" fill="transparent" strokeWidth={stroke} r={normalizedRadius} cx={radius} cy={radius} />
           <circle
-            stroke="hsl(var(--muted))"
-            fill="transparent"
-            strokeWidth={stroke}
-            r={normalizedRadius}
-            cx={radius}
-            cy={radius}
-          />
-          <circle
-            stroke={
-              mode === "work"
-                ? "hsl(var(--pomodoro-work-ring))"
-                : "hsl(var(--pomodoro-break-ring))"
-            }
+            stroke={mode === "work" ? "hsl(var(--pomodoro-work-ring))" : "hsl(var(--pomodoro-break-ring))"}
             fill="transparent"
             strokeWidth={stroke}
             strokeLinecap="round"
             strokeDasharray={`${circumference} ${circumference}`}
-            style={{
-              strokeDashoffset,
-              transition: "stroke-dashoffset 0s linear", // Disable CSS transition for smooth JS animation
-            }}
-            r={normalizedRadius}
-            cx={radius}
-            cy={radius}
+            style={{ strokeDashoffset, transition: "stroke-dashoffset 0s linear" }}
+            r={normalizedRadius} cx={radius} cy={radius}
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div
-            className={size > 100 ? "text-4xl font-bold" : "text-2xl font-bold"}
-          >
-            {isPaused
-              ? `${t("pomodoroTimer.pauseLabel")} ${formatTime(pauseDuration)}`
-              : formatTime(smoothRemaining)}
+          <div className={size > 100 ? "text-4xl font-bold" : "text-2xl font-bold"}>
+            {isPaused ? `${t("pomodoroTimer.pauseLabel")} ${formatTime(pauseDuration)}` : formatTime(smoothRemaining)}
           </div>
         </div>
       </div>
+
       <div className="flex space-x-2 mt-4">
-        {!isRunning && (
-          <Button onClick={() => start()}>{t("pomodoroTimer.start")}</Button>
-        )}
-        {isRunning && !isPaused && (
-          <Button onClick={handlePause} variant="outline">
-            {t("pomodoroTimer.pause")}
-          </Button>
-        )}
-        {isRunning && !isPaused && mode === "work" && !compact && (
-          <Button onClick={handleStartBreak} variant="outline">
-            {t("pomodoroTimer.break")}
-          </Button>
-        )}
-        {isRunning && !isPaused && mode === "break" && !compact && (
-          <Button onClick={handleSkipBreak} variant="outline">
-            {t("pomodoroTimer.skipBreak")}
-          </Button>
-        )}
-        {isRunning && isPaused && (
-          <Button onClick={handleResume} variant="outline">
-            {t("pomodoroTimer.resume")}
-          </Button>
-        )}
+        {!isRunning && <Button onClick={() => start()}>{t("pomodoroTimer.start")}</Button>}
+        {isRunning && !isPaused && <Button onClick={handlePause} variant="outline">{t("pomodoroTimer.pause")}</Button>}
+        {isRunning && isPaused && <Button onClick={handleResume} variant="outline">{t("pomodoroTimer.resume")}</Button>}
+        
+        {/* 将原来的 reset 换成 handleResetClick */}
         {isRunning && !compact && (
-          <Button onClick={handleReset} variant="outline">
-            {t("pomodoroTimer.reset")}
-          </Button>
-        )}
-        {!floating && (
-          <Button onClick={openFloatingWindow} variant="outline">
-            {t("pomodoroTimer.float")}
-          </Button>
+          <Button onClick={handleResetClick} variant="outline">{t("pomodoroTimer.reset")}</Button>
         )}
       </div>
-      {!floating && !compact && (
-        <div className="flex space-x-2 mt-2 text-xs">
-          <div className="flex items-center space-x-1">
-            <span>{t("pomodoroTimer.workLabel")}</span>
-            <input
-              type="number"
-              className="w-12 border rounded px-1"
-              value={pomodoro.workMinutes}
-              onChange={(e) =>
-                updatePomodoro("workMinutes", Number(e.target.value))
-              }
-            />
-          </div>
-          <div className="flex items-center space-x-1">
-            <span>{t("pomodoroTimer.breakLabel")}</span>
-            <input
-              type="number"
-              className="w-12 border rounded px-1"
-              value={pomodoro.breakMinutes}
-              onChange={(e) =>
-                updatePomodoro("breakMinutes", Number(e.target.value))
-              }
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 };

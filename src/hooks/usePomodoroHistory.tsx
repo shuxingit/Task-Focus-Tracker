@@ -48,8 +48,10 @@ const usePomodoroHistoryImpl = () => {
     save();
   }, [sessions, loaded]);
 
-  const addSession = (start: number, end: number, type: "work" | "break") => {
-    setSessions((prev) => [...prev, { start, end, type }]);
+// 1. 在参数里增加 reason?: string
+  const addSession = (start: number, end: number, type: "work" | "break", reason?: string) => {
+    // 2. 在创建新对象时加入 reason
+    setSessions((prev) => [...prev, { start, end, type, reason }]);
   };
 
   const updateSession = (index: number, data: Partial<PomodoroSession>) => {

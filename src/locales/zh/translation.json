@@ -600,7 +600,7 @@
       "unpinned": "未固定"
     }
   },
-  "pomodoroTimer": {
+ "pomodoroTimer": {
     "start": "开始",
     "pause": "暂停",
     "resume": "继续",
@@ -610,7 +610,14 @@
     "float": "浮窗",
     "workLabel": "工作中",
     "breakLabel": "休息中",
-    "pauseLabel": "暂停时长:"
+    "pauseLabel": "暂停时长:",
+    "quitReasonTitle": "确认放弃这次专注吗？",
+    "quitReasonDesc": "根据系统设定，中途退出必须输入放弃理由以供后续复盘。",
+    "quitReasonPlaceholder": "例如：接了个电话、想刷短视频了...",
+    "quitReasonLabel": "放弃理由",
+    "noInterruptionData": "暂无中断复盘数据。记得在中断时写下理由，才能分析‘专注力杀手’哦！",
+    "interruptionTitle": "专注力杀手排行榜 (中断原因复盘)",
+    "interruptionTip": "复盘：减少上述高频干扰，是提升数字协作效率的第一步。"
   },
   "pomodoroStats": {
     "total": "累计",

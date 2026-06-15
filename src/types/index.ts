@@ -212,6 +212,7 @@ export interface PomodoroSession {
   end: number;
   breakEnd?: number; // Legacy field, kept for migration
   type: "work" | "break";
+  reason?: string;
 }
 
 export interface PomodoroStats {
