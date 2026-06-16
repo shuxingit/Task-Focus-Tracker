@@ -1,50 +1,39 @@
-# Backend Guide
+# 后端指南
 
-The backend resides in the `server` directory and uses an Express application with SQLite for persistence.
+后端位于 `server` 目录中，使用 Express 应用和 SQLite 进行持久化。
 
-## Entry Points
+## 入口点
 
-- [`server/index.ts`](../server/index.ts) boots the server, loads user settings and starts background services like synchronization.
-- [`server/app.ts`](../server/app.ts) configures Express, registers middleware and attaches the various route controllers.
+- [`server/index.ts`](../server/index.ts) 启动服务器、加载用户设置并启动同步等后台服务。
+- [`server/app.ts`](../server/app.ts) 配置 Express、注册中间件并附加各种路由控制器。
 
-## Structure
+## 结构
 
-- [`server/controllers`](../server/controllers) – route handlers for features such as tasks, notes, flashcards and more.
-- [`server/services`](../server/services) – business logic utilities, including the synchronization logic in `syncService.ts` and data helpers in `dataService.ts`.
-- [`server/repositories`](../server/repositories) – data access modules wrapping SQLite queries.
-- [`server/migrations`](../server/migrations) – schema migrations executed on startup.
-- [`server/middleware`](../server/middleware) – security features like request limits and sanitization.
-- [`server/lib`](../server/lib) – shared libraries such as `swagger.js` for API documentation and logging helpers.
+- [`server/controllers`](../server/controllers) - 功能的路由处理器，如任务、笔记、闪卡等。
+- [`server/services`](../server/services) - 业务逻辑工具，包括 `syncService.ts` 中的同步逻辑和 `dataService.ts` 中的数据助手。
+- [`server/repositories`](../server/repositories) - 包装 SQLite 查询的数据访问模块。
+- [`server/migrations`](../server/migrations) - 启动时执行的模式迁移。
+- [`server/middleware`](../server/middleware) - 安全功能，如请求限制和清理。
+- [`server/lib`](../server/lib) - 共享库，如用于 API 文档的 `swagger.js` 和日志助手。
 
-## Controllers and Routes
+## 控制器和路由
 
-Each module in [`server/controllers`](../server/controllers) registers a set of
-REST endpoints. For example, `notes.ts` manages note CRUD operations while
-`timers.ts` exposes timer synchronization. `server/app.ts` mounts these
-controllers under the `/api` path.
+[`server/controllers`](../server/controllers) 中的每个模块注册一组 REST 端点。例如，`notes.ts` 管理笔记的 CRUD 操作，而 `timers.ts` 公开计时器同步。`server/app.ts` 将这些控制器挂载在 `/api` 路径下。
 
-## Services and Repositories
+## 服务和仓库
 
-`server/services` contains domain-specific logic such as the synchronization
-engine in [`syncService.ts`](../server/services/syncService.ts). Data access is
-abstracted behind repository modules that issue SQL queries via `better-sqlite3`.
+`server/services` 包含特定领域的逻辑，如 [`syncService.ts`](../server/services/syncService.ts) 中的同步引擎。数据访问通过仓库模块抽象，这些模块通过 `better-sqlite3` 发出 SQL 查询。
 
-## Database and Migrations
+## 数据库和迁移
 
-The SQLite database lives in `server/data` and is initialised by
-[`server/lib/db.ts`](../server/lib/db.ts). Schema migrations reside in
-[`server/migrations`](../server/migrations) and run automatically on startup.
-See the [Database Guide](database.md) for table details.
+SQLite 数据库位于 `server/data` 中，并由 [`server/lib/db.ts`](../server/lib/db.ts) 初始化。模式迁移位于 [`server/migrations`](../server/migrations) 中，并在启动时自动运行。有关表的详细信息，请参阅 [数据库指南](database.md)。
 
-## Background Jobs
+## 后台任务
 
-Background services handle periodic tasks such as syncing and cleanup. They are
-started in [`server/index.ts`](../server/index.ts) after the Express app is
-initialised.
+后台服务处理同步和清理等周期性任务。它们在 Express 应用初始化后在 [`server/index.ts`](../server/index.ts) 中启动。
 
-## Testing
+## 测试
 
-Backend logic is covered by Vitest tests alongside frontend tests in the
-[`tests`](../tests) directory. Run `npm test` to execute the suite.
+后端逻辑由 Vitest 测试覆盖，与 [`tests`](../tests) 目录中的前端测试一起。运行 `npm test` 执行测试套件。
 
-To see how this server integrates with the client side, check the [Architecture Overview](architecture.md) or the [Frontend Guide](frontend.md).
+要了解此服务器如何与客户端集成，请查看 [架构概述](architecture.md) 或 [前端指南](frontend.md)。

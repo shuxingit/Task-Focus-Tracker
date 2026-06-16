@@ -15,7 +15,6 @@
 | `Dockerfile` | 构建 Docker 镜像的说明书。 |
 | `AGENTS.md` | AI 代理指南（你刚才汉化的文件），定义代码公约和规则。 |
 | `README.md` | 项目自述文件。包含安装说明、功能列表和截图。 |
-| `TODO.md` | 开发进度表/路线图，记录已完成和未完成的技术任务。 |
 | `tsconfig.json` | TypeScript 编译配置文件。 |
 | `vite.config.ts` | 前端构建工具 Vite 的配置（如端口设置、插件等）。 |
 

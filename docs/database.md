@@ -1,20 +1,16 @@
-# Database Guide
+# 数据库指南
 
-The backend uses a SQLite database located at `server/data/data.db`. The schema
-is created and verified when the server starts through
-[`server/lib/db.ts`](../server/lib/db.ts).
+后端使用位于 `server/data/data.db` 的 SQLite 数据库。模式由 [`server/lib/db.ts`](../server/lib/db.ts) 在服务器启动时创建和验证。
 
-## Core Tables
+## 核心表
 
-- **`tasks`** – stores individual tasks with metadata such as priority, due
-  dates and recurrence information.
-- **`recurring`** – template tasks that generate upcoming instances.
-- **`notes`** – free-form notes with optional categories and pinning.
-- **`decks`/`flashcards`** – spaced‑repetition learning data.
-- **`habits`** – recurring habits with completion tracking.
+- **`tasks`** - 存储单个任务，包含优先级、截止日期和重复信息等元数据。
+- **`recurring`** - 生成即将到来实例的模板任务。
+- **`notes`** - 自由格式笔记，可选分类和置顶。
+- **`decks`/`flashcards`** - 间隔重复学习数据。
+- **`habits`** - 带有完成跟踪的重复习惯。
 
-The `tasks` table definition shows the breadth of fields available to describe a
-single task:
+`tasks` 表定义展示了描述单个任务可用的广泛字段：
 
 ```sql
 CREATE TABLE IF NOT EXISTS tasks (
@@ -51,16 +47,10 @@ CREATE TABLE IF NOT EXISTS tasks (
 );
 ```
 
-## Migrations
+## 迁移
 
-Migrations live in [`server/migrations`](../server/migrations) and are managed by
-the [`MigrationRunner`](../server/migrations/migrationRunner.ts). New migration
-scripts register themselves with the runner and are executed in order on startup.
-The runner also records applied versions in `server/data/migrations.json` to
-avoid re‑running migrations.
+迁移位于 [`server/migrations`](../server/migrations) 中，由 [`MigrationRunner`](../server/migrations/migrationRunner.ts) 管理。新的迁移脚本向运行器注册自己，并在启动时按顺序执行。运行器还在 `server/data/migrations.json` 中记录应用的版本，以避免重新运行迁移。
 
-## Backups and Data Files
+## 备份和数据文件
 
-A `backups` directory is created under `server/data` for snapshotting data.
-Legacy JSON data files are kept for compatibility but new development should
-interact with the SQLite database through the repository layer.
+在 `server/data` 下创建 `backups` 目录用于数据快照。保留旧的 JSON 数据文件以保持兼容性，但新开发应通过仓库层与 SQLite 数据库交互。

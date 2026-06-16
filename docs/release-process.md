@@ -1,139 +1,139 @@
-# 🚀 Release-Prozess für Total-Task-Tracker
+# 🚀 Total-Task-Tracker 发布流程
 
-Dieser Guide erklärt, wie du neue Production- und Beta-Releases für Total-Task-Tracker erstellst.
+本指南说明如何为 Total-Task-Tracker 创建新的生产版本和测试版本（Beta）。
 
-## 📋 Übersicht
+## 📋 概述
 
-### Branch-Struktur
+### 分支结构
 
-- **`main`** - Entwicklungs-Branch (Feature-Integration)
-- **`beta`** - Beta-Testing Branch (stabile Features)
-- **`production`** - Production-Branch (nur produktionsreife Features)
+- **`main`** - 开发分支（功能集成）
+- **`beta`** - Beta 测试分支（稳定功能）
+- **`production`** - 生产分支（仅包含生产就绪功能）
 
-### Release-Typen
+### 发布类型
 
-- **🧪 Beta Release** - Für Testing und Feedback
-- **🚀 Production Release** - Stabile, produktionsreife Version
+- **🧪 Beta 发布** - 用于测试和反馈
+- **🚀 生产发布** - 稳定的生产就绪版本
 
 ---
 
-## 🧪 Beta Release erstellen
+## 🧪 创建 Beta 发布
 
-### Schritt 1: Feature-Entwicklung
+### 步骤 1：功能开发
 
 ```bash
-# Feature-Branch erstellen
+# 创建功能分支
 git checkout main
 git pull origin main
-git checkout -b feature/neue-funktion
+git checkout -b feature/new-feature
 
-# Entwicklung + Tests
+# 开发 + 测试
 git add .
-git commit -m "feat: neue Funktion hinzugefügt"
+git commit -m "feat: 添加新功能"
 
-# Pull Request zu main
-git push -u origin feature/neue-funktion
-gh pr create --base main --title "feat: neue Funktion"
+# 推送到 main 的 Pull Request
+git push -u origin feature/new-feature
+gh pr create --base main --title "feat: 新功能"
 ```
 
-### Schritt 2: Zu Beta mergen
+### 步骤 2：合并到 Beta
 
 ```bash
-# Nach Merge des Features zu main:
+# 功能合并到 main 后：
 git checkout beta
 git pull origin beta
 
-# Pull Request von main zu beta erstellen
-gh pr create --base beta --head main --title "feat: Beta Release - neue Features"
+# 创建从 main 到 beta 的 Pull Request
+gh pr create --base beta --head main --title "feat: Beta Release - 新功能"
 ```
 
-### Schritt 3: Beta Release wird automatisch erstellt
+### 步骤 3：自动创建 Beta 发布
 
-- 🤖 Beim Merge zu `beta` wird automatisch ein **Beta Pre-Release** erstellt
-- 🐳 Docker Image wird gebaut: `ghcr.io/timbornemann/total-task-tracker:beta`
-- 📋 Release Notes werden aus `.github/release-notes.beta.md` generiert
+- 🤖 合并到 `beta` 时自动创建 **Beta 预发布版本**
+- 🐳 构建 Docker 镜像：`ghcr.io/timbornemann/total-task-tracker:beta`
+- 📋 从 `.github/release-notes.beta.md` 生成发布说明
 
-### Beta Release Beispiel:
+### Beta 发布示例：
 
-- **Tag:** `v1.2.0-beta.1`
+- **标签:** `v1.2.0-beta.1`
 - **Docker:** `ghcr.io/timbornemann/total-task-tracker:beta-20241215123045-a1b2c3d`
-- **Status:** Pre-Release (für Testing)
+- **状态:** 预发布（用于测试）
 
 ---
 
-## 🚀 Production Release erstellen
+## 🚀 创建生产发布
 
-### Schritt 1: Beta getestet und stabil
+### 步骤 1：Beta 测试通过且稳定
 
 ```bash
-# Sicherstellen dass Beta stabil läuft
-# Feedback gesammelt und Bugs gefixt
+# 确保 Beta 稳定运行
+# 收集反馈并修复 Bug
 ```
 
-### Schritt 2: Versionierung vorbereiten
+### 步骤 2：准备版本号
 
-Die Versionierung erfolgt automatisch basierend auf:
+版本号自动基于以下规则计算：
 
-#### Commit Messages (Conventional Commits):
+#### Commit 消息（Conventional Commits）：
 
-- `feat:` → **Minor Version** (1.0.0 → 1.1.0)
-- `fix:` → **Patch Version** (1.0.0 → 1.0.1)
-- `BREAKING CHANGE:` → **Major Version** (1.0.0 → 2.0.0)
+- `feat:` → **次要版本** (1.0.0 → 1.1.0)
+- `fix:` → **补丁版本** (1.0.0 → 1.0.1)
+- `BREAKING CHANGE:` → **主要版本** (1.0.0 → 2.0.0)
 
-#### PR Labels (überschreibt Commit Messages):
+#### PR 标签（覆盖 Commit 消息）：
 
-- Label `major` → Major Version
-- Label `minor` → Minor Version
-- Label `patch` → Patch Version
+- 标签 `major` → 主要版本
+- 标签 `minor` → 次要版本
+- 标签 `patch` → 补丁版本
 
-### Schritt 3: Production Release
+### 步骤 3：生产发布
 
 ```bash
-# Von beta zu production mergen
+# 从 beta 合并到 production
 git checkout production
 git pull origin production
 
-# Pull Request von beta zu production
+# 创建从 beta 到 production 的 Pull Request
 gh pr create --base production --head beta --title "feat: Production Release v1.2.0" --label minor
 ```
 
-### Schritt 4: Automatischer Release
+### 步骤 4：自动发布
 
-Bei Merge zu `production`:
+合并到 `production` 时：
 
-- 🤖 Neue Version wird automatisch berechnet
-- 📝 `VERSION` Datei wird aktualisiert
-- 🏷️ Git Tag wird erstellt (z.B. `v1.2.0`)
-- 📦 GitHub Release wird erstellt
-- 🐳 Docker Images werden gebaut:
+- 🤖 自动计算新版本号
+- 📝 更新 `VERSION` 文件
+- 🏷️ 创建 Git 标签（例如 `v1.2.0`）
+- 📦 创建 GitHub Release
+- 🐳 构建 Docker 镜像：
   - `ghcr.io/timbornemann/total-task-tracker:latest`
   - `ghcr.io/timbornemann/total-task-tracker:1.2.0`
 
 ---
 
-## 🔧 Hotfixes (Kritische Fixes)
+## 🔧 热修复（关键修复）
 
-### Für kritische Bugs in Production:
+### 针对生产环境中的关键 Bug：
 
 ```bash
-# Hotfix-Branch von production
+# 从 production 创建热修复分支
 git checkout production
 git pull origin production
-git checkout -b hotfix/kritischer-bug
+git checkout -b hotfix/critical-bug
 
-# Fix implementieren
+# 实施修复
 git add .
-git commit -m "fix: kritischer Bug behoben"
+git commit -m "fix: 修复关键 Bug"
 
-# Pull Request direkt zu production
-git push -u origin hotfix/kritischer-bug
-gh pr create --base production --title "hotfix: kritischer Bug" --label patch
+# 直接推送到 production 的 Pull Request
+git push -u origin hotfix/critical-bug
+gh pr create --base production --title "hotfix: 关键 Bug" --label patch
 ```
 
-### Nach Hotfix-Merge:
+### 热修复合并后：
 
 ```bash
-# Hotfix zu anderen Branches zurück mergen
+# 将热修复合并回其他分支
 git checkout main
 git merge production
 
@@ -143,32 +143,32 @@ git merge production
 
 ---
 
-## 📊 Release-Übersicht
+## 📊 发布概述
 
-### Beta Releases
+### Beta 发布
 
-| Zweck          | Testing, Feedback, experimentelle Features |
+| 用途 | 测试、反馈、实验性功能 |
 | -------------- | ------------------------------------------ |
-| **Trigger**    | Merge zu `beta` Branch                     |
-| **Docker Tag** | `beta`, `beta-YYYYMMDDHHMMSS-COMMIT`       |
-| **GitHub**     | Pre-Release                                |
-| **Stabilität** | ⚠️ Experimentell                           |
+| **触发器** | 合并到 `beta` 分支 |
+| **Docker 标签** | `beta`, `beta-YYYYMMDDHHMMSS-COMMIT` |
+| **GitHub** | 预发布 |
+| **稳定性** | ⚠️ 实验性 |
 
-### Production Releases
+### 生产发布
 
-| Zweck             | Stabile, produktionsreife Versionen |
+| 用途 | 稳定的生产就绪版本 |
 | ----------------- | ----------------------------------- |
-| **Trigger**       | Merge zu `production` Branch        |
-| **Versionierung** | Semantic Versioning (1.2.3)         |
-| **Docker Tag**    | `latest`, `1.2.3`                   |
-| **GitHub**        | Release (Latest)                    |
-| **Stabilität**    | ✅ Produktionsbereit                |
+| **触发器** | 合并到 `production` 分支 |
+| **版本控制** | 语义化版本控制 (1.2.3) |
+| **Docker 标签** | `latest`, `1.2.3` |
+| **GitHub** | Release (最新) |
+| **稳定性** | ✅ 生产就绪 |
 
 ---
 
-## 🐳 Docker Images verwenden
+## 🐳 使用 Docker 镜像
 
-### Production (empfohlen)
+### 生产环境（推荐）
 
 ```bash
 docker pull ghcr.io/timbornemann/total-task-tracker:latest
@@ -177,7 +177,7 @@ docker run -d --name total-task-tracker -p 3002:3002 \
   ghcr.io/timbornemann/total-task-tracker:latest
 ```
 
-### Spezifische Version
+### 指定版本
 
 ```bash
 docker pull ghcr.io/timbornemann/total-task-tracker:1.2.0
@@ -186,7 +186,7 @@ docker run -d --name total-task-tracker -p 3002:3002 \
   ghcr.io/timbornemann/total-task-tracker:1.2.0
 ```
 
-### Beta Testing
+### Beta 测试
 
 ```bash
 docker pull ghcr.io/timbornemann/total-task-tracker:beta
@@ -197,24 +197,24 @@ docker run -d --name total-task-tracker-beta -p 3003:3002 \
 
 ---
 
-## ⚙️ Workflow-Konfiguration
+## ⚙️ 工作流配置
 
-### Automatische Workflows
+### 自动工作流
 
-- **`ci.yml`** - Tests, Linting, Build (alle Branches)
-- **`release-on-merge.yml`** - Production Release (bei Merge zu production)
-- **`release-on-merge-beta.yml`** - Beta Release (bei Merge zu beta)
-- **`docker-build-release.yml`** - Docker Build (bei Allen Releases)
-- **`docker-on-beta-release.yml`** - Docker Build (nur Beta Releases)
+- **`ci.yml`** - 测试、代码检查、构建（所有分支）
+- **`release-on-merge.yml`** - 生产发布（合并到 production 时）
+- **`release-on-merge-beta.yml`** - Beta 发布（合并到 beta 时）
+- **`docker-build-release.yml`** - Docker 构建（所有发布）
+- **`docker-on-beta-release.yml`** - Docker 构建（仅 Beta 发布）
 
-### Release Notes anpassen
+### 自定义发布说明
 
-- **Production:** Bearbeite `.github/release-notes.md`
-- **Beta:** Bearbeite `.github/release-notes.beta.md`
+- **生产:** 编辑 `.github/release-notes.md`
+- **Beta:** 编辑 `.github/release-notes.beta.md`
 
-### Manuelle Versionierung
+### 手动版本控制
 
-Falls nötig, kannst du die `VERSION` Datei manuell anpassen:
+如有必要，可以手动编辑 `VERSION` 文件：
 
 ```bash
 echo "2.0.0" > VERSION
@@ -224,69 +224,69 @@ git commit -m "chore: manual version bump to 2.0.0"
 
 ---
 
-## 🔍 Troubleshooting
+## 🔍 故障排除
 
-### Release schlägt fehl
+### 发布失败
 
-1. **CI Tests prüfen** - Alle Tests müssen grün sein
-2. **Branch Protection** - PRs müssen alle Required Checks bestehen
-3. **Permissions** - GitHub Actions braucht "Read and write permissions"
-4. **VERSION Datei** - Muss gültiges Format haben (x.y.z)
+1. **检查 CI 测试** - 所有测试必须通过
+2. **分支保护** - PR 必须通过所有必需检查
+3. **权限** - GitHub Actions 需要 "Read and write permissions"
+4. **VERSION 文件** - 必须具有有效格式 (x.y.z)
 
-### Docker Build Probleme
+### Docker 构建问题
 
-1. **Abhängigkeiten** - `npm ci` und `npm run build` müssen funktionieren
-2. **Dockerfile** - Syntax und Pfade prüfen
-3. **Registry Login** - GitHub Token muss gültig sein
+1. **依赖项** - `npm ci` 和 `npm run build` 必须正常工作
+2. **Dockerfile** - 检查语法和路径
+3. **注册表登录** - GitHub Token 必须有效
 
-### Beta/Production Konflikte
+### Beta/生产冲突
 
-1. **Branch Sync** - Branches regelmäßig mergen
-2. **Merge Konflikte** - Vor Release auflösen
-3. **Testing** - Beta vor Production ausgiebig testen
-
----
-
-## 📈 Best Practices
-
-### ✅ Do's
-
-- Features erst zu main, dann beta, dann production
-- Ausgiebiges Testing in Beta-Phase
-- Meaningful commit messages verwenden
-- Release Notes vor Release aktualisieren
-- Backup vor großen Updates
-
-### ❌ Don'ts
-
-- Niemals direkt zu production pushen
-- Keine ungetesteten Features in production
-- Keine Breaking Changes ohne Major Version Bump
-- Keine sensitive Daten in Release Notes
+1. **分支同步** - 定期合并分支
+2. **合并冲突** - 在发布前解决
+3. **测试** - 在生产发布前充分测试 Beta
 
 ---
 
-## 🎯 Checkliste für Releases
+## 📈 最佳实践
 
-### Beta Release
+### ✅ 应该做
 
-- [ ] Feature entwickelt und getestet
-- [ ] PR zu main gemerged
-- [ ] Beta Release Notes aktualisiert
-- [ ] PR zu beta erstellt und gemerged
-- [ ] Beta Docker Image getestet
-- [ ] Feedback von Beta-Testern gesammelt
+- 功能先合并到 main，然后到 beta，最后到 production
+- 在 Beta 阶段进行充分测试
+- 使用有意义的 commit 消息
+- 发布前更新发布说明
+- 重大更新前备份
 
-### Production Release
+### ❌ 不应该做
 
-- [ ] Beta ausgiebig getestet
-- [ ] Alle kritischen Bugs behoben
-- [ ] Production Release Notes aktualisiert
-- [ ] Korrekte PR Labels gesetzt (major/minor/patch)
-- [ ] PR zu production gemerged
-- [ ] Production Docker Image verifiziert
-- [ ] Release-Ankündigung vorbereitet
+- 绝不要直接推送到 production
+- 不要在生产环境中使用未经测试的功能
+- 不要在没有主要版本升级的情况下进行破坏性更改
+- 不要在发布说明中包含敏感数据
 
 ---
 
-_📚 Für weitere Details siehe [Branching Strategy](branching-strategy.md)_
+## 🎯 发布检查清单
+
+### Beta 发布
+
+- [ ] 功能开发并测试完成
+- [ ] PR 已合并到 main
+- [ ] Beta 发布说明已更新
+- [ ] 创建并合并到 beta 的 PR
+- [ ] Beta Docker 镜像已测试
+- [ ] 收集 Beta 测试人员的反馈
+
+### 生产发布
+
+- [ ] Beta 已充分测试
+- [ ] 所有关键 Bug 已修复
+- [ ] 生产发布说明已更新
+- [ ] 设置正确的 PR 标签 (major/minor/patch)
+- [ ] PR 已合并到 production
+- [ ] 生产 Docker 镜像已验证
+- [ ] 发布公告已准备
+
+---
+
+_📚 有关更多详细信息，请参阅 [分支策略](branching-strategy.md)_

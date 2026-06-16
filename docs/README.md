@@ -1,12 +1,12 @@
-# Developer Documentation
+# 开发者文档
 
-This directory provides a technical overview of the Total-Task-Tracker project. The goal is to help new contributors understand how the application is structured and where key pieces of logic live.
+本目录提供了 Total-Task-Tracker 项目的技术概述。旨在帮助新贡献者理解应用的结构以及关键逻辑的位置。
 
-## Contents
+## 目录内容
 
-- [Architecture Overview](architecture.md)
-- [Frontend Guide](frontend.md)
-- [Backend Guide](backend.md)
-- [Database Guide](database.md)
+- [架构概述](architecture.md)
+- [前端指南](frontend.md)
+- [后端指南](backend.md)
+- [数据库指南](database.md)
 
-Each document links to relevant source files and explains how different parts of the system interact.
+每个文档都链接到相关的源文件，并解释系统不同部分如何交互。
