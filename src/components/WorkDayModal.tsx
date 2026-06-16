@@ -117,7 +117,8 @@ const WorkDayModal: React.FC<WorkDayModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 1. 加上 async 关键字
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (
       form.start &&
@@ -138,7 +139,9 @@ const WorkDayModal: React.FC<WorkDayModalProps> = ({
       }
       const finalCategory =
         categorySelection === "new" ? newCategory : categorySelection;
-      onSave({
+      
+      // 2. 加上 await 确保数据存入 SQLite 成功
+      await onSave({
         start: normalizeDateTime(fromInput(form.start)),
         end: normalizeDateTime(fromInput(form.end)),
         category: finalCategory,
@@ -146,10 +149,13 @@ const WorkDayModal: React.FC<WorkDayModalProps> = ({
         commuteId,
         commuteKm: commuteKmNum,
       });
+
+      // 3. 核心修复：强制刷新页面，让主界面的下拉框重新加载最新领域列表
+      window.location.reload();
+
       onClose();
     }
   };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
