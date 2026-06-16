@@ -19,13 +19,24 @@ const useWorklogImpl = () => {
   const [deletions, setDeletions] = useState<Deletion[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const normalizeDay = (d: WorkDay): WorkDay => ({
+  const normalizeDay = (d: WorkDay): WorkDay => {
+  // 辅助函数：确保返回本地时间格式的字符串
+  const ensureLocal = (dateInput: string | Date) => {
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return dateInput.toString();
+    // 返回 YYYY-MM-DD HH:mm:ss 格式
+    return date.toLocaleString('sv-SE').replace(',', ''); 
+  };
+
+  return {
     ...d,
-    start: normalizeDateTime(d.start),
-    end: normalizeDateTime(d.end),
+    start: ensureLocal(d.start),
+    end: ensureLocal(d.end),
     category: d.category || "work",
-    updatedAt: d.updatedAt || new Date(),
-  });
+    // 【核心修复点】：确保这里返回的是 Date 对象，而不是 string
+    updatedAt: d.updatedAt ? new Date(d.updatedAt) : new Date(), 
+  };
+};
 
   // Initial data loading from local storage and server
   useEffect(() => {

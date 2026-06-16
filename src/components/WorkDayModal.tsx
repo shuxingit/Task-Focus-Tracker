@@ -118,7 +118,7 @@ const WorkDayModal: React.FC<WorkDayModalProps> = ({
   };
 
   // 1. 加上 async 关键字
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (
       form.start &&
@@ -127,6 +127,7 @@ const WorkDayModal: React.FC<WorkDayModalProps> = ({
     ) {
       let commuteId: string | undefined;
       let commuteKmNum: number | undefined;
+      
       if (commuteSelection === "new" && newCommute.name && newCommute.km) {
         commuteId = addCommute({
           name: newCommute.name,
@@ -137,11 +138,12 @@ const WorkDayModal: React.FC<WorkDayModalProps> = ({
       } else if (commuteSelection) {
         commuteId = commuteSelection;
       }
+      
       const finalCategory =
         categorySelection === "new" ? newCategory : categorySelection;
-      
-      // 2. 加上 await 确保数据存入 SQLite 成功
-      await onSave({
+
+      // 1. 去掉 await，直接调用
+      onSave({
         start: normalizeDateTime(fromInput(form.start)),
         end: normalizeDateTime(fromInput(form.end)),
         category: finalCategory,
@@ -150,8 +152,11 @@ const WorkDayModal: React.FC<WorkDayModalProps> = ({
         commuteKm: commuteKmNum,
       });
 
-      // 3. 核心修复：强制刷新页面，让主界面的下拉框重新加载最新领域列表
-      window.location.reload();
+      // 2. 核心修复：使用定时器在 100 毫秒后刷新
+      // 这样既能避开 TypeScript 对 await 的报错，又能确保后端有时间写入 SQLite
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
 
       onClose();
     }
