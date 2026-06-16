@@ -681,6 +681,7 @@
     "categoriesBadge": "{{count}} 个分类",
     "tasksTitle": "任务",
     "tasksBadge": "{{count}} 项任务",
+    "search": "搜索...",          
     "searchCategories": "搜索分类...",
     "searchTasks": "搜索任务...",
     "noCategories": "暂无分类",

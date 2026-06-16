@@ -16,16 +16,35 @@ const RecurringTasksPage = () => {
     updateRecurringTask,
     deleteRecurringTask,
   } = useTaskStore();
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { t } = useTranslation();
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [parentTask, setParentTask] = useState<Task | null>(null);
+
+  // 【核心修复】：只筛选出没有父 ID 的任务作为顶层显示，防止子任务变同级
+  const rootRecurring = recurring.filter(t => !t.parentId);
 
   const handleSave = (data: TaskFormData) => {
     if (editingTask) {
       updateRecurringTask(editingTask.id, data);
     } else {
-      addRecurringTask({ ...data, isRecurring: true, template: true });
+      addRecurringTask({ 
+        ...data, 
+        isRecurring: true, 
+        template: true,
+        parentId: parentTask?.id || undefined,
+        completed: false,
+        status: "todo",
+        order: 0
+      });
     }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingTask(null);
+    setParentTask(null);
   };
 
   return (
@@ -37,37 +56,41 @@ const RecurringTasksPage = () => {
             <Plus className="h-4 w-4 mr-2" /> {t("recurring.template")}
           </Button>
         </div>
-        {recurring.length === 0 ? (
+        
+        {rootRecurring.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("recurring.none")}</p>
         ) : (
           <div className="space-y-2">
-            {recurring.map((t) => (
+            {rootRecurring.map((t) => (
               <TaskCard
                 key={t.id}
                 task={t}
                 parentPathTitles={[]}
-                showSubtasks={false}
+                showSubtasks={true} // 开启嵌套显示
                 onEdit={() => {
                   setEditingTask(t);
                   setIsModalOpen(true);
                 }}
                 onDelete={() => deleteRecurringTask(t.id)}
-                onAddSubtask={() => {}}
+                onAddSubtask={(p) => {
+                  setParentTask(p);
+                  setIsModalOpen(true);
+                }}
                 onToggleComplete={() => {}}
                 onViewDetails={() => {}}
+                onReset={() => {}}
               />
             ))}
           </div>
         )}
       </div>
+
       <TaskModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingTask(null);
-        }}
+        onClose={handleCloseModal}
         onSave={handleSave}
         task={editingTask || undefined}
+        parentId={parentTask?.id} // 统一使用 parentId
         categories={categories}
         defaultIsRecurring
       />

@@ -238,7 +238,7 @@ const Dashboard: React.FC = () => {
         onSave={editingTask ? handleUpdateTask : handleCreateTask}
         task={editingTask || undefined}
         categories={categories}
-        parentTask={parentTask || undefined}
+        parentId={parentTask?.id}
         defaultCategoryId={selectedCategory?.id}
       />
 
